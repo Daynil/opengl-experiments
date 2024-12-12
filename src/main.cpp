@@ -29,6 +29,18 @@ struct GameState
     float speed;
     float fps;
     float deltaTime;
+
+    glm::vec3 cameraPos;
+    glm::vec3 cameraFront;
+    glm::vec3 cameraUp;
+
+    float lastX;
+    float lastY;
+
+    float yaw;
+    float pitch;
+
+    float fov;
 };
 
 struct GameState gameState;
@@ -449,12 +461,30 @@ public:
         // The view transforms from world coords to view coords
         // Here we set the camera a few units away from the scene (aka, shift the whole scene back)
         // Note OGL uses a right-handed system, so -z is backward.
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        //glm::mat4 view = glm::mat4(1.0f);
+        //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+        // Camera style with the lookAt function, rotates over time
+        //const float radius = 10.0f;
+        //float camX = sin(glfwGetTime()) * radius;
+        //float camZ = cos(glfwGetTime()) * radius;
+        //glm::mat4 view;
+        //view = glm::lookAt(
+        //    // Position (of camera in world space) vector
+        //    glm::vec3(camX, 0.0f, camZ),
+        //    // Target (of camera in world space) vector
+        //    glm::vec3(0.0f, 0.0f, 0.0f),
+        //    // Up vector
+        //    glm::vec3(0.0f, 1.0f, 0.0f)
+        //);
+
+        // Camera looks around with keys
+        glm::mat4 view;
+        view = glm::lookAt(gameState.cameraPos, gameState.cameraPos + gameState.cameraFront, gameState.cameraUp);
 
         // This creates the projection
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(gameState.fov), 800.0f / 600.0f, 0.1f, 100.0f);
 
         shaderContainer.setMat4("view", glm::value_ptr(view));
         shaderContainer.setMat4("projection", glm::value_ptr(projection));
@@ -496,19 +526,79 @@ private:
 };
 
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GLFW_TRUE);
+//static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+//{
+//	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+//		glfwSetWindowShouldClose(window, GLFW_TRUE);
+//
+//    if ((key == GLFW_KEY_UP || key == GLFW_KEY_W) && action == GLFW_PRESS)
+//        gameState.cameraPos += gameState.speed * gameState.deltaTime * gameState.cameraFront;
+//    if ((key == GLFW_KEY_LEFT || key == GLFW_KEY_A) && action == GLFW_PRESS)
+//        gameState.cameraPos -= glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+//    if ((key == GLFW_KEY_DOWN || key == GLFW_KEY_S) && action == GLFW_PRESS)
+//        gameState.cameraPos -= gameState.speed * gameState.deltaTime * gameState.cameraFront;
+//    if ((key == GLFW_KEY_RIGHT || key == GLFW_KEY_D) && action == GLFW_PRESS)
+//        gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+//}
 
-    if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
-        gameState.move.x = 1 * gameState.speed;
-    if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
-        gameState.move.x = -1 * gameState.speed;
-    if (key == GLFW_KEY_UP && action == GLFW_PRESS)
-        gameState.move.y = 1 * gameState.speed;
-    if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
-        gameState.move.y = -1 * gameState.speed;
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            gameState.cameraPos += gameState.speed * gameState.deltaTime * gameState.cameraFront;
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            gameState.cameraPos -= glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            gameState.cameraPos -= gameState.speed * gameState.deltaTime * gameState.cameraFront;
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+}
+
+
+bool firstMouse = true;
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        gameState.lastX = xpos;
+        gameState.lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - gameState.lastX;
+    float yoffset = gameState.lastY - ypos;
+    gameState.lastX = xpos;
+    gameState.lastY = ypos;
+
+    const float sensitivity = 0.1f;
+    gameState.yaw += (xoffset * sensitivity);
+    gameState.pitch += (yoffset * sensitivity);
+
+    if (gameState.pitch > 89.0f)
+        gameState.pitch = 89.0f;
+    if (gameState.pitch < -89.0f)
+        gameState.pitch = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+    direction.y = sin(glm::radians(gameState.pitch));
+    direction.z = sin(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+    gameState.cameraFront = glm::normalize(direction);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    gameState.fov -= (float)yoffset;
+    if (gameState.fov < 1.0f)
+        gameState.fov = 1.0f;
+    if (gameState.fov > 45.0f)
+        gameState.fov = 45.0f;
+    std::cout << gameState.fov << std::endl;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -541,7 +631,11 @@ int main(void)
 		return -1;
 	}
 
-	glfwSetKeyCallback(window, key_callback);
+	//glfwSetKeyCallback(window, key_callback);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
 	glfwMakeContextCurrent(window);
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -566,27 +660,41 @@ int main(void)
 
 
     gameState.move = glm::vec3(0.0f, 0.0f, 0.0f);
-    gameState.speed = 0.05f;
+    gameState.speed = 2.5f;
 
+    gameState.cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+    gameState.cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    gameState.cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    gameState.lastX = 400;
+    gameState.lastY = 300;
+    
+    gameState.yaw = 0;
+    gameState.pitch = 0;
+
+    gameState.fov = 45.0f;
 
     //RandomShapes randomShapes;
     //ContainerTexture containerTexture;
     Cubes cubes;
 
-    float time = glfwGetTime();
-
     glEnable(GL_DEPTH_TEST);
-    
+
+    float lastFrame = 0.0f;
+
 	while (!glfwWindowShouldClose(window))
 	{
+        processInput(window);
+
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        float currentFrame = glfwGetTime();
         // Delta time = seconds per frame (s/f)
-        gameState.deltaTime = glfwGetTime() - time;
+        gameState.deltaTime = currentFrame - lastFrame;
         gameState.fps = 1 / gameState.deltaTime;
 
-        time = glfwGetTime();
+        lastFrame = currentFrame;
 
         //std::cout << gameState.fps << " " << gameState.deltaTime << std::endl;
         
