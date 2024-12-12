@@ -174,7 +174,11 @@ void Shader::setFloat(const std::string& name, float value) const
 {
     glUniform1f(checkGetUniform(name.c_str()), value);
 }
-void Shader::setVec4(const std::string& name, std::array<float, 4>& value) const
+void Shader::setVec4(const std::string& name, glm::vec4& value) const
 {
-    glUniform4f(checkGetUniform(name.c_str()), value[0], value[1], value[2], value[3]);
+    glUniform4f(checkGetUniform(name.c_str()), value.x, value.y, value.z, value.w);
+}
+void Shader::setMat4(const std::string& name, glm::f32* value) const
+{
+    glUniformMatrix4fv(checkGetUniform(name.c_str()), 1, GL_FALSE, value);
 }

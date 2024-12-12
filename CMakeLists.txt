@@ -1,8 +1,9 @@
 #https://github.com/meemknight/cmakeSetup
+#https://github.com/meemknight/openglConfiguration
 
 cmake_minimum_required(VERSION 3.16)
 
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") #we want to use the static runtime
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # We want to use the static runtime
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
 
 project(mygame)
@@ -11,12 +12,12 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(thirdparty/glfw-3.3.2)			#window oppener
-add_subdirectory(thirdparty/glad)				#opengl loader
-add_subdirectory(thirdparty/stb_image)			#loading immaged
-add_subdirectory(thirdparty/stb_truetype)		#loading ttf files
-add_subdirectory(thirdparty/glm)				#math
-add_subdirectory(thirdparty/imgui-docking)		#ui
+add_subdirectory(thirdparty/glfw-3.3.2)			# Window opener
+add_subdirectory(thirdparty/glad)				# Opengl loader
+add_subdirectory(thirdparty/stb_image)			# Loading images
+add_subdirectory(thirdparty/stb_truetype)		# Loading ttf font files
+add_subdirectory(thirdparty/glm)				# Math
+add_subdirectory(thirdparty/imgui-docking)		# UI
 
 
 # Define MY_SOURCES to be a list of all the source files for my game 
