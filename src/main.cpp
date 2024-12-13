@@ -41,6 +41,8 @@ struct GameState
     float pitch;
 
     float fov;
+
+    int joystick_id;
 };
 
 struct GameState gameState;
@@ -549,14 +551,52 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-            gameState.cameraPos += gameState.speed * gameState.deltaTime * gameState.cameraFront;
-        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-            gameState.cameraPos -= glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-            gameState.cameraPos -= gameState.speed * gameState.deltaTime * gameState.cameraFront;
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-            gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        gameState.cameraPos += gameState.speed * gameState.deltaTime * gameState.cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        gameState.cameraPos -= glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        gameState.cameraPos -= gameState.speed * gameState.deltaTime * gameState.cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+
+    if (gameState.joystick_id >= 0)
+    {
+        GLFWgamepadstate state;
+        if (glfwGetGamepadState(gameState.joystick_id, &state))
+        {
+            float leftStickX = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+            float leftStickY = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+
+            // Invert y (defaults to down is up)
+            gameState.cameraPos += -leftStickY * gameState.speed * gameState.deltaTime * gameState.cameraFront;
+            gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * leftStickX * gameState.speed * gameState.deltaTime;
+
+            float rightStickX = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+            float rightStickY = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+
+            const float sensitivity = 1.0f;
+            gameState.yaw += (rightStickX * sensitivity);
+            // By default right stick uses airplane style controls (up is down) - invert
+            gameState.pitch += (-rightStickY * sensitivity);
+
+            glm::vec3 direction;
+            direction.x = cos(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+            direction.y = sin(glm::radians(gameState.pitch));
+            direction.z = sin(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+            gameState.cameraFront = glm::normalize(direction);
+
+            for (int i = 0; i < GLFW_GAMEPAD_BUTTON_LAST; ++i) {
+                if (state.buttons[GLFW_GAMEPAD_BUTTON_A])
+                {
+                    std::cout << "A Button pressed!" << std::endl;
+                }
+                if (state.buttons[i] == GLFW_PRESS) {
+                    std::cout << "Button " << i << " pressed!" << std::endl;
+                }
+            }
+        }
+    }
 }
 
 
@@ -606,6 +646,33 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+void joystick_callback(int jid, int event)
+{
+    if (event == GLFW_CONNECTED)
+    {
+        if (glfwJoystickIsGamepad(jid))
+        {
+            std::cout << "Gamepad connected: " + (std::string)glfwGetGamepadName(jid) + " (id: " <<  jid << ")" << std::endl;
+            GLFWgamepadstate state;
+            if (glfwGetGamepadState(jid, &state))
+            {
+                gameState.joystick_id = jid;
+            }
+            else
+            {
+                std::cout << "Gamepad has no valid mapping: " + (std::string)glfwGetGamepadName(jid) << std::endl;
+            }
+        }
+
+    }
+    else if (event == GLFW_DISCONNECTED)
+    {
+        //std::cout << "Gamepad disconnected: " + (std::string)glfwGetGamepadName(jid) << std::endl;
+        std::cout << "Gamepad id " << jid << " disconnected!" << std::endl;
+        gameState.joystick_id = -1;
+    }
+}
+
 int main(void)
 {
 
@@ -633,9 +700,12 @@ int main(void)
 
 	//glfwSetKeyCallback(window, key_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // Disable cursor for best FPS mode, removed for testing
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+
+    glfwSetJoystickCallback(joystick_callback);
 
 	glfwMakeContextCurrent(window);
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -673,6 +743,13 @@ int main(void)
     gameState.pitch = 0;
 
     gameState.fov = 45.0f;
+
+    gameState.joystick_id = -1;
+    for (int i = GLFW_JOYSTICK_1; i < GLFW_JOYSTICK_16; i++)
+    {
+        if (glfwJoystickPresent(i))
+            joystick_callback(i, GLFW_CONNECTED);
+    }
 
     //RandomShapes randomShapes;
     //ContainerTexture containerTexture;
