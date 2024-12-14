@@ -18,8 +18,11 @@ public:
 	// Combined shaders - use #shader vertex and #shader fragment
 	// as the delimeter.
 	Shader(const std::string& vertexFragPath);
+
 	// Activates the shader
-	void use();
+	void activate();
+	void deactivate();
+
 	void deleteShader();
 	// Utility functions to set uniforms
 	void setBool(const std::string& name, bool value) const;

@@ -12,6 +12,11 @@
 
 // Our stuff
 #include "shader_s.h"
+#include "display.h"
+#include "entity.h"
+#include "texture.h"
+#include "renderer.h"
+#include "controls.h"
 
 
 #define USE_GPU_ENGINE 0
@@ -166,7 +171,7 @@ public:
 
     void draw()
     {
-        shaderBlue.use();
+        shaderBlue.activate();
         shaderBlue.setFloat("horizontalOffset", 0.15f);
 
         glBindVertexArray(VAOs[0]);
@@ -176,7 +181,7 @@ public:
         float timeValue = glfwGetTime();
         float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
 
-        shaderGreen.use();
+        shaderGreen.activate();
         glm::vec4 color = { 0.0f, greenValue, 0.0f, 1.0f };
         shaderGreen.setVec4("ourColor", color);
 
@@ -271,7 +276,7 @@ public:
 
     void draw()
     {
-        shaderContainer.use();
+        shaderContainer.activate();
 
         glm::mat4 trans = glm::mat4(1.0f);
 
@@ -425,7 +430,7 @@ public:
 
     void draw()
     {
-        shaderContainer.use();
+        shaderContainer.activate();
 
         glm::mat4 trans = glm::mat4(1.0f);
 
@@ -546,132 +551,132 @@ private:
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        gameState.cameraPos += gameState.speed * gameState.deltaTime * gameState.cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        gameState.cameraPos -= glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        gameState.cameraPos -= gameState.speed * gameState.deltaTime * gameState.cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
-
-    if (gameState.joystick_id >= 0)
-    {
-        GLFWgamepadstate state;
-        if (glfwGetGamepadState(gameState.joystick_id, &state))
-        {
-            float leftStickX = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
-            float leftStickY = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
-
-            // Invert y (defaults to down is up)
-            gameState.cameraPos += -leftStickY * gameState.speed * gameState.deltaTime * gameState.cameraFront;
-            gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * leftStickX * gameState.speed * gameState.deltaTime;
-
-            float rightStickX = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
-            float rightStickY = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
-
-            const float sensitivity = 1.0f;
-            gameState.yaw += (rightStickX * sensitivity);
-            // By default right stick uses airplane style controls (up is down) - invert
-            gameState.pitch += (-rightStickY * sensitivity);
-
-            glm::vec3 direction;
-            direction.x = cos(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
-            direction.y = sin(glm::radians(gameState.pitch));
-            direction.z = sin(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
-            gameState.cameraFront = glm::normalize(direction);
-
-            for (int i = 0; i < GLFW_GAMEPAD_BUTTON_LAST; ++i) {
-                if (state.buttons[GLFW_GAMEPAD_BUTTON_A])
-                {
-                    std::cout << "A Button pressed!" << std::endl;
-                }
-                if (state.buttons[i] == GLFW_PRESS) {
-                    std::cout << "Button " << i << " pressed!" << std::endl;
-                }
-            }
-        }
-    }
-}
-
-
-bool firstMouse = true;
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    if (firstMouse)
-    {
-        gameState.lastX = xpos;
-        gameState.lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - gameState.lastX;
-    float yoffset = gameState.lastY - ypos;
-    gameState.lastX = xpos;
-    gameState.lastY = ypos;
-
-    const float sensitivity = 0.1f;
-    gameState.yaw += (xoffset * sensitivity);
-    gameState.pitch += (yoffset * sensitivity);
-
-    if (gameState.pitch > 89.0f)
-        gameState.pitch = 89.0f;
-    if (gameState.pitch < -89.0f)
-        gameState.pitch = -89.0f;
-
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
-    direction.y = sin(glm::radians(gameState.pitch));
-    direction.z = sin(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
-    gameState.cameraFront = glm::normalize(direction);
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    gameState.fov -= (float)yoffset;
-    if (gameState.fov < 1.0f)
-        gameState.fov = 1.0f;
-    if (gameState.fov > 45.0f)
-        gameState.fov = 45.0f;
-    std::cout << gameState.fov << std::endl;
-}
+//void processInput(GLFWwindow* window)
+//{
+//    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+//        glfwSetWindowShouldClose(window, true);
+//
+//    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+//        gameState.cameraPos += gameState.speed * gameState.deltaTime * gameState.cameraFront;
+//    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+//        gameState.cameraPos -= glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+//    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+//        gameState.cameraPos -= gameState.speed * gameState.deltaTime * gameState.cameraFront;
+//    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+//        gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * gameState.speed * gameState.deltaTime;
+//
+//    if (gameState.joystick_id >= 0)
+//    {
+//        GLFWgamepadstate state;
+//        if (glfwGetGamepadState(gameState.joystick_id, &state))
+//        {
+//            float leftStickX = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+//            float leftStickY = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+//
+//            // Invert y (defaults to down is up)
+//            gameState.cameraPos += -leftStickY * gameState.speed * gameState.deltaTime * gameState.cameraFront;
+//            gameState.cameraPos += glm::normalize(glm::cross(gameState.cameraFront, gameState.cameraUp)) * leftStickX * gameState.speed * gameState.deltaTime;
+//
+//            float rightStickX = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+//            float rightStickY = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+//
+//            const float sensitivity = 1.0f;
+//            gameState.yaw += (rightStickX * sensitivity);
+//            // By default right stick uses airplane style controls (up is down) - invert
+//            gameState.pitch += (-rightStickY * sensitivity);
+//
+//            glm::vec3 direction;
+//            direction.x = cos(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+//            direction.y = sin(glm::radians(gameState.pitch));
+//            direction.z = sin(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+//            gameState.cameraFront = glm::normalize(direction);
+//
+//            for (int i = 0; i < GLFW_GAMEPAD_BUTTON_LAST; ++i) {
+//                if (state.buttons[GLFW_GAMEPAD_BUTTON_A])
+//                {
+//                    std::cout << "A Button pressed!" << std::endl;
+//                }
+//                if (state.buttons[i] == GLFW_PRESS) {
+//                    std::cout << "Button " << i << " pressed!" << std::endl;
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//
+//bool firstMouse = true;
+//void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+//{
+//    if (firstMouse)
+//    {
+//        gameState.lastX = xpos;
+//        gameState.lastY = ypos;
+//        firstMouse = false;
+//    }
+//
+//    float xoffset = xpos - gameState.lastX;
+//    float yoffset = gameState.lastY - ypos;
+//    gameState.lastX = xpos;
+//    gameState.lastY = ypos;
+//
+//    const float sensitivity = 0.1f;
+//    gameState.yaw += (xoffset * sensitivity);
+//    gameState.pitch += (yoffset * sensitivity);
+//
+//    if (gameState.pitch > 89.0f)
+//        gameState.pitch = 89.0f;
+//    if (gameState.pitch < -89.0f)
+//        gameState.pitch = -89.0f;
+//
+//    glm::vec3 direction;
+//    direction.x = cos(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+//    direction.y = sin(glm::radians(gameState.pitch));
+//    direction.z = sin(glm::radians(gameState.yaw)) * cos(glm::radians(gameState.pitch));
+//    gameState.cameraFront = glm::normalize(direction);
+//}
+//
+//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+//{
+//    gameState.fov -= (float)yoffset;
+//    if (gameState.fov < 1.0f)
+//        gameState.fov = 1.0f;
+//    if (gameState.fov > 45.0f)
+//        gameState.fov = 45.0f;
+//    std::cout << gameState.fov << std::endl;
+//}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
 }
 
-void joystick_callback(int jid, int event)
-{
-    if (event == GLFW_CONNECTED)
-    {
-        if (glfwJoystickIsGamepad(jid))
-        {
-            std::cout << "Gamepad connected: " + (std::string)glfwGetGamepadName(jid) + " (id: " <<  jid << ")" << std::endl;
-            GLFWgamepadstate state;
-            if (glfwGetGamepadState(jid, &state))
-            {
-                gameState.joystick_id = jid;
-            }
-            else
-            {
-                std::cout << "Gamepad has no valid mapping: " + (std::string)glfwGetGamepadName(jid) << std::endl;
-            }
-        }
-
-    }
-    else if (event == GLFW_DISCONNECTED)
-    {
-        //std::cout << "Gamepad disconnected: " + (std::string)glfwGetGamepadName(jid) << std::endl;
-        std::cout << "Gamepad id " << jid << " disconnected!" << std::endl;
-        gameState.joystick_id = -1;
-    }
-}
+//void joystick_callback(int jid, int event)
+//{
+//    if (event == GLFW_CONNECTED)
+//    {
+//        if (glfwJoystickIsGamepad(jid))
+//        {
+//            std::cout << "Gamepad connected: " + (std::string)glfwGetGamepadName(jid) + " (id: " <<  jid << ")" << std::endl;
+//            GLFWgamepadstate state;
+//            if (glfwGetGamepadState(jid, &state))
+//            {
+//                gameState.joystick_id = jid;
+//            }
+//            else
+//            {
+//                std::cout << "Gamepad has no valid mapping: " + (std::string)glfwGetGamepadName(jid) << std::endl;
+//            }
+//        }
+//
+//    }
+//    else if (event == GLFW_DISCONNECTED)
+//    {
+//        //std::cout << "Gamepad disconnected: " + (std::string)glfwGetGamepadName(jid) << std::endl;
+//        std::cout << "Gamepad id " << jid << " disconnected!" << std::endl;
+//        gameState.joystick_id = -1;
+//    }
+//}
 
 int main(void)
 {
@@ -691,25 +696,133 @@ int main(void)
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //you might want to do this when testing the game for shipping
 
 
-	GLFWwindow* window = window = glfwCreateWindow(800, 600, "OpenGL Experiments", NULL, NULL);
-	if (!window)
+	//GLFWwindow* window = window = glfwCreateWindow(800, 600, "OpenGL Experiments", NULL, NULL);
+    Display display(800.0f, 600.0f, "OpenGL Experiments");
+	if (!display.window)
 	{
+        std::cout << "***ERROR initializing glfw window" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
+
+    Camera camera;
+
+    Controls controls(display.window, &camera);
+
+    Shader shader(RESOURCES_PATH "shaders/entity.shader");
+    Renderer renderer(shader, 800, 600);
+
+    //const std::vector<float> vertices = {
+    //        0.5f,  0.5f, 0.0f,
+    //        0.5f, -0.5f, 0.0f,
+    //        -0.5f, -0.5f, 0.0f,
+    //        -0.5f,  0.5f, 0.0f,
+    //};
+    //
+    //const std::vector<float> textureCoords = {
+    //        1.0f, 1.0f,
+    //        1.0f, 0.0f,
+    //        0.0f, 0.0f,
+    //        0.0f, 1.0f
+    //};
+    //
+    //const std::vector<unsigned int> indices = {
+    //    // rectangle
+    //    0, 1, 3, // first triangle
+    //    1, 2, 3, // second triangle
+    //};
+
+    const std::vector<float> vertices = {
+        -0.5f,0.5f,0,
+        -0.5f,-0.5f,0,
+        0.5f,-0.5f,0,
+        0.5f,0.5f,0,
+
+        -0.5f,0.5f,1,
+        -0.5f,-0.5f,1,
+        0.5f,-0.5f,1,
+        0.5f,0.5f,1,
+
+        0.5f,0.5f,0,
+        0.5f,-0.5f,0,
+        0.5f,-0.5f,1,
+        0.5f,0.5f,1,
+
+        -0.5f,0.5f,0,
+        -0.5f,-0.5f,0,
+        -0.5f,-0.5f,1,
+        -0.5f,0.5f,1,
+
+        -0.5f,0.5f,1,
+        -0.5f,0.5f,0,
+        0.5f,0.5f,0,
+        0.5f,0.5f,1,
+
+        -0.5f,-0.5f,1,
+        -0.5f,-0.5f,0,
+        0.5f,-0.5f,0,
+        0.5f,-0.5f,1
+    };
+    
+    const std::vector<float> textureCoords = {
+        0,0,
+        0,1,
+        1,1,
+        1,0,
+        0,0,
+        0,1,
+        1,1,
+        1,0,
+        0,0,
+        0,1,
+        1,1,
+        1,0,
+        0,0,
+        0,1,
+        1,1,
+        1,0,
+        0,0,
+        0,1,
+        1,1,
+        1,0,
+        0,0,
+        0,1,
+        1,1,
+        1,0
+    };
+    
+    const std::vector<unsigned int> indices = {
+        0,1,3,
+        3,1,2,
+        4,5,7,
+        7,5,6,
+        8,9,11,
+        11,9,10,
+        12,13,15,
+        15,13,14,
+        16,17,19,
+        19,17,18,
+        20,21,23,
+        23,21,22
+    };
+
+
+    Entity entity(RESOURCES_PATH "container.jpg", vertices, textureCoords, indices, glm::vec3(0, 0, 0));
 
 	//glfwSetKeyCallback(window, key_callback);
 
     // Disable cursor for best FPS mode, removed for testing
     //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+    /*glfwSetCursorPosCallback(display.window, mouse_callback);
+    glfwSetScrollCallback(display.window, scroll_callback);
 
-    glfwSetJoystickCallback(joystick_callback);
+    glfwSetJoystickCallback(joystick_callback);*/
 
-	glfwMakeContextCurrent(window);
+	/*glfwMakeContextCurrent(window);
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-	glfwSwapInterval(1);
+	glfwSwapInterval(1);*/
+
+
 
 
 #pragma region report opengl errors to std
@@ -724,47 +837,49 @@ int main(void)
 
 	// Behind the scenes, this is used to transform 2d coordinates to coordinates on screen
 	// E.g., (-0.5,0.5) would (as its final transformation) be mapped to (200,450) in screen coords
-	glViewport(0, 0, 800, 600);
+	//glViewport(0, 0, 800, 600);
 	// Listen to window resize events and update viewport
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	//glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 
-    gameState.move = glm::vec3(0.0f, 0.0f, 0.0f);
-    gameState.speed = 2.5f;
+    //gameState.move = glm::vec3(0.0f, 0.0f, 0.0f);
+    //gameState.speed = 2.5f;
 
-    gameState.cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-    gameState.cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-    gameState.cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    //gameState.cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+    //gameState.cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    //gameState.cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    gameState.lastX = 400;
-    gameState.lastY = 300;
-    
-    gameState.yaw = 0;
-    gameState.pitch = 0;
+    //gameState.lastX = 400;
+    //gameState.lastY = 300;
+    //
+    //gameState.yaw = 0;
+    //gameState.pitch = 0;
 
-    gameState.fov = 45.0f;
+    //gameState.fov = 45.0f;
 
-    gameState.joystick_id = -1;
-    for (int i = GLFW_JOYSTICK_1; i < GLFW_JOYSTICK_16; i++)
-    {
-        if (glfwJoystickPresent(i))
-            joystick_callback(i, GLFW_CONNECTED);
-    }
+    //gameState.joystick_id = -1;
+    //for (int i = GLFW_JOYSTICK_1; i < GLFW_JOYSTICK_16; i++)
+    //{
+    //    if (glfwJoystickPresent(i))
+    //        joystick_callback(i, GLFW_CONNECTED);
+    //}
 
     //RandomShapes randomShapes;
     //ContainerTexture containerTexture;
-    Cubes cubes;
+    //Cubes cubes;
 
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
 
     float lastFrame = 0.0f;
 
-	while (!glfwWindowShouldClose(window))
+	while (!glfwWindowShouldClose(display.window))
 	{
-        processInput(window);
+        //processInput(display.window);
+        renderer.prepare();
+        renderer.render(entity, shader, camera);
 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float currentFrame = glfwGetTime();
         // Delta time = seconds per frame (s/f)
@@ -777,9 +892,9 @@ int main(void)
         
         //randomShapes.draw();
         //containerTexture.draw();
-        cubes.draw();
+        //cubes.draw();
 
-		glfwSwapBuffers(window);
+		glfwSwapBuffers(display.window);
 		glfwPollEvents();
 	}
 

@@ -153,9 +153,13 @@ int Shader::checkGetUniform(const std::string& name) const
     return location;
 }
 
-void Shader::use()
+void Shader::activate()
 {
     glUseProgram(ID);
+}
+void Shader::deactivate()
+{
+    glUseProgram(0);
 }
 void Shader::deleteShader()
 {
