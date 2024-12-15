@@ -15,7 +15,4 @@ public:
 
 	Display(float displayWidth, float displayHeight, std::string title);
 	static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-
-private:
-	void onFramebufferSizeChanged(int width, int height);
 };

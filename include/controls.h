@@ -18,23 +18,28 @@ class Controls
 public:
 	Controls(GLFWwindow* window, Camera* camera);
 
-	void processInput();
+	void processInput(GLFWwindow* window, float deltaTime);
 	static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-	void scroll_callback(double xoffset, double yoffset);
-	void joystick_callback(int jid, int event);
+	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+	static void joystick_callback(int jid, int event);
 
 private:
-	GLFWwindow* window;
+	static GLFWwindow* window;
 	Camera* camera;
 
-	float lastX;
-	float lastY;
-	bool firstMouse;
+	float lastX = 400;
+	float lastY = 300;
+	bool firstMouse = true;
 	int joystick_id = -1;
 
-	float yaw;
-	float pitch;
-	float roll;
+	float yaw = 0;
+	float pitch = 0;
+	float roll = 0;
+
+	float speed = 2.5f;
+
+	float mouse_sensitivity = 0.1f;
+	float joystick_sensitivity = 1.0f;
 
 	//void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 };

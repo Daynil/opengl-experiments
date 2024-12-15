@@ -2,8 +2,11 @@
 
 #include <glad/glad.h>
 
-Display::Display(float displayWidth, float displayHeight, std::string title)
+Display::Display(float pDisplayWidth, float pDisplayHeight, std::string title)
 {
+	displayWidth = pDisplayWidth;
+	displayHeight = pDisplayHeight;
+
 	window = glfwCreateWindow(displayWidth, displayHeight, title.c_str(), NULL, NULL);
 	if (!window)
 		return;
@@ -17,7 +20,7 @@ Display::Display(float displayWidth, float displayHeight, std::string title)
 
 	// Behind the scenes, this is used to transform 2d coordinates to coordinates on screen
 	// E.g., (-0.5,0.5) would (as its final transformation) be mapped to (200,450) in screen coords
-	glViewport(0, 0, displayWidth, displayWidth);
+	glViewport(0, 0, displayWidth, displayHeight);
 
 	// Listen to window resize events and update viewport
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -25,14 +28,9 @@ Display::Display(float displayWidth, float displayHeight, std::string title)
 
 void Display::framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	// Retrieve the Display instance associated with this window
+	// Retrieve the instance associated with this window
 	Display* display = static_cast<Display*>(glfwGetWindowUserPointer(window));
-	if (display) {
-		display->onFramebufferSizeChanged(width, height);
-	}
-}
-
-void Display::onFramebufferSizeChanged(int width, int height)
-{
 	glViewport(0, 0, width, height);
+	display->displayWidth = width;
+	display->displayHeight = height;
 }

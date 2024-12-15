@@ -1,33 +1,38 @@
 #include "renderer.h"
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "shader_s.h"
 
-Renderer::Renderer(Shader& shader, float displayWidth, float displayHeight)
+Renderer::Renderer()
 {
-	float aspectRatio = displayWidth / displayHeight;
-	projection = glm::perspective(glm::radians(FOV), aspectRatio, NEAR_PLANE, FAR_PLANE);
-	shader.activate();
-	shader.setMat4("projection", glm::value_ptr(projection));
-	shader.deactivate();
 }
 
-void Renderer::render(Entity& entity, Shader& shader, Camera& camera)
+void Renderer::render(Entity& entity, Shader& shader, Camera& camera, Display& display)
 {
-	glBindVertexArray(entity.VAO_ID);
+	glBindVertexArray(entity.model->VAO_ID);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	shader.activate();
 
-	glm::mat4 transform = glm::mat4(1.0f);
-	transform = glm::translate(transform, entity.position);
-	transform = glm::rotate(transform, glm::radians(entity.rotationX), glm::vec3(1.0f, 0.0f, 0.0f));
-	transform = glm::rotate(transform, glm::radians(entity.rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-	transform = glm::rotate(transform, glm::radians(entity.rotationZ), glm::vec3(0.0f, 0.0f, 1.0f));
-	transform = glm::scale(transform, glm::vec3(entity.scale, entity.scale, entity.scale));
+	float aspectRatio = display.displayWidth / display.displayHeight;
+	glm::mat4 perspective = glm::perspective(glm::radians(camera.FOV), aspectRatio, camera.NEAR_PLANE, camera.FAR_PLANE);
+	shader.setMat4("projection", glm::value_ptr(perspective));
+
+	// Apply entity positions and transformations
+	glm::mat4 translate = glm::translate(glm::mat4(1.0f), entity.position);
+
+	glm::vec3 eulerAngles(glm::radians(entity.rotationX), glm::radians(entity.rotationY), glm::radians(entity.rotationZ));
+	glm::mat4 rotation = glm::toMat4(glm::quat(eulerAngles));
+
+	glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(entity.scale, entity.scale, entity.scale));
+
+	glm::mat4 transform = translate * rotation * scale;
 	shader.setMat4("transform", glm::value_ptr(transform));
 
 	glm::mat4 view;
@@ -35,14 +40,12 @@ void Renderer::render(Entity& entity, Shader& shader, Camera& camera)
 	shader.setMat4("view", glm::value_ptr(view));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, entity.texture.textureID);
+	glBindTexture(GL_TEXTURE_2D, entity.model->texture.textureID);
 
-	// TODO: how to get this from model?
-	int modelVertexCount = 36;
-	glDrawElements(GL_TRIANGLES, modelVertexCount, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, entity.model->vertex_count, GL_UNSIGNED_INT, 0);
 
-	//glEnableVertexAttribArray(0);
-	//glEnableVertexAttribArray(1);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 	glBindVertexArray(0);
 }
 

@@ -7,17 +7,14 @@
 
 #include "entity.h"
 #include "camera.h"
+#include "display.h"
+#include "shader_s.h"
 
 class Renderer
 {
 public:
-	float FOV = 45.0f;
-	float NEAR_PLANE = 0.1f;
-	float FAR_PLANE = 100.0f;
-	glm::mat4 projection;
+	Renderer();
 
-	Renderer(Shader& shader, float displayWidth, float displayHeight);
-
-	void render(Entity& entity, Shader& shader, Camera& camera);
+	void render(Entity& entity, Shader& shader, Camera& camera, Display& display);
 	void prepare();
 };
