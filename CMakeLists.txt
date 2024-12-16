@@ -24,6 +24,9 @@ add_subdirectory(thirdparty/imgui-docking)		# UI
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
 
+# Define MY_INCLUDES to be a list of all the include files for my game 
+file(GLOB_RECURSE MY_INCLUDES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+
 add_executable("${CMAKE_PROJECT_NAME}")
 
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
@@ -39,6 +42,9 @@ target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES} )
 
 if(MSVC) # If using the VS compiler...
 
+	target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE "/ZI")
+	target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "/INCREMENTAL")
+
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC _CRT_SECURE_NO_WARNINGS)
 
 	#remove console
@@ -50,7 +56,9 @@ if(MSVC) # If using the VS compiler...
 endif()
 
 
-target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
+
+
+target_include_directories("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_INCLUDES})
 
 
 target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw 

@@ -1,11 +1,17 @@
 #include "display.h"
 
+#include <iostream>
+
 #include <glad/glad.h>
+#include "openglDebug.h"
 
 Display::Display(float pDisplayWidth, float pDisplayHeight, std::string title)
 {
 	displayWidth = pDisplayWidth;
 	displayHeight = pDisplayHeight;
+
+	// Reports OpenGL errors to std out
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
 	window = glfwCreateWindow(displayWidth, displayHeight, title.c_str(), NULL, NULL);
 	if (!window)
@@ -14,6 +20,19 @@ Display::Display(float pDisplayWidth, float pDisplayHeight, std::string title)
 	glfwMakeContextCurrent(window);
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 	glfwSwapInterval(1);
+
+	// Reports OpenGL errors to std out
+	int flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+	{
+		std::cout << "Using OpenGL Version:" << std::endl;
+		std::cout << glGetString(GL_VERSION) << std::endl;
+		std::cout << "OpenGL Error Logging Enabled" << std::endl;
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(glDebugOutput, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	}
 
 	// Associate this Display instance with the GLFW window
 	glfwSetWindowUserPointer(window, this);

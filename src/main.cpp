@@ -4,7 +4,6 @@
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-#include <openglDebug.h>
 #include <stb_image/stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -34,11 +33,6 @@ int main(void)
 	if (!glfwInit())
 		return -1;
 
-
-#pragma region report opengl errors to std
-	//enable opengl debugging output.
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#pragma endregion
 
 	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -159,16 +153,6 @@ int main(void)
     {
         cubes.push_back(Entity(&model, pos, 45.0f, 45.0f, 0.0f, 0.5f));
     }
-
-#pragma region report opengl errors to std
-	glEnable(GL_DEBUG_OUTPUT);
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	glDebugMessageCallback(glDebugOutput, 0);
-	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-#pragma endregion
-
-	std::cout << "Using OpenGL Version:" << std::endl;
-	std::cout << glGetString(GL_VERSION) << std::endl;
 
     float lastFrame = 0.0f;
 
